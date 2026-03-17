@@ -43,12 +43,12 @@ export function FunkeWalletScreen() {
           <IconContainer
             bg="white"
             aria-label="Menu"
-            icon={<HeroIcons.Menu />}
+            icon={<HeroIcons.Menu/>}
             onPress={pushToMenu}
           />
-          <Heading fontSize={16} fontWeight="$bold" color="$primary-500">
+          <Paragraph fontSize={18} fontWeight="$bold" color={'$grey-500'} numberOfLines={1}>
             Credential List
-          </Heading>
+          </Paragraph>
           <InboxIcon />
         </XStack>
         {isLoadingCredentials ? (
