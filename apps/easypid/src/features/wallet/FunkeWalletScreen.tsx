@@ -1,10 +1,10 @@
+import { useMemo, useState } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useCredentialsForDisplay } from '@package/agent'
 import { useHaptics } from '@package/app/hooks'
 import {
   CustomIcons,
   FlexPage,
-  Heading,
   HeroIcons,
   IconContainer,
   Loader,
@@ -12,6 +12,8 @@ import {
   XStack,
   YStack,
   ScrollView,
+  Stack,
+  Input,
 } from '@package/ui'
 import { useRouter } from 'expo-router'
 import { InboxIcon } from './components/InboxIcon'
@@ -24,12 +26,21 @@ export function FunkeWalletScreen() {
 
   const {
     handleScroll,
-    isScrolledByOffset,
     scrollEventThrottle,
   } = useScrollViewPosition()
 
   const { credentials, isLoading: isLoadingCredentials } =
     useCredentialsForDisplay()
+
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const filteredCredentials = useMemo(() => {
+    return credentials.filter((credential) =>
+      credential.display.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase())
+    )
+  }, [credentials, searchQuery])
 
   const pushToMenu = withHaptics(() => push('/menu'))
   const pushToScanner = withHaptics(() => push('/scan'))
@@ -43,71 +54,121 @@ export function FunkeWalletScreen() {
           <IconContainer
             bg="white"
             aria-label="Menu"
-            icon={<HeroIcons.Menu/>}
+            icon={<HeroIcons.Menu />}
             onPress={pushToMenu}
           />
-          <Paragraph fontSize={18} fontWeight="$bold" color={'$grey-500'} numberOfLines={1}>
+          <Paragraph
+            fontSize={18}
+            fontWeight="$bold"
+            color="$grey-500"
+            numberOfLines={1}
+          >
             Credential List
           </Paragraph>
           <InboxIcon />
         </XStack>
+
         {isLoadingCredentials ? (
           <YStack ai="center" jc="center" mt="$6">
             <Loader />
           </YStack>
-        ) : credentials.length > 0 ? (
-          <ScrollView
-            onScroll={handleScroll}
-            scrollEventThrottle={scrollEventThrottle}
-            contentContainerStyle={{
-              paddingBottom: 120,
-            }}
-            showsVerticalScrollIndicator={false}
-          >
-            <YStack px="$2" pb="$12">
-              {credentials.map((credential, index) => (
-                <YStack
-                  key={credential.id}
-                  mt={index === 0 ? 0 : -120}
-                  zIndex={index}
-                >
-                  <FunkeCredentialCard
-                    issuerImage={{
-                      url: credential.display.issuer.logo?.url,
-                      altText:
-                        credential.display.issuer.logo?.altText,
-                    }}
-                    textColor={credential.display.textColor}
-                    name={credential.display.name}
-                    backgroundImage={{
-                      url:
-                        credential.display.backgroundImage?.url,
-                      altText:
-                        credential.display.backgroundImage?.altText,
-                    }}
-                    bgColor={
-                      credential.display.backgroundColor ??
-                      '$grey-900'
-                    }
-                    onPress={() =>
-                      push(
-                        `/credentials/${credential.id}/attributes`
-                      )
-                    }
-                  />
-                </YStack>
-              ))}
-            </YStack>
-          </ScrollView>
-        ) : (
+
+        ) : credentials.length === 0 ? (
           <Paragraph ta="center" mt="$6">
             <Trans id="credentials.emptyTitle">
               There's nothing here, yet
             </Trans>
           </Paragraph>
+
+        ) : (
+          <ScrollView
+            onScroll={handleScroll}
+            scrollEventThrottle={scrollEventThrottle}
+            contentContainerStyle={{
+              paddingBottom: 140,
+            }}
+            showsVerticalScrollIndicator={false}
+          >
+            <Stack position="relative" px="$2">
+              <Input
+                value={searchQuery}
+                onChangeText={(e) =>
+                  setSearchQuery(
+                    typeof e === 'string'
+                      ? e
+                      : e.nativeEvent.text
+                  )
+                }
+                pl="$7"
+                mb="$6"
+                bg="$grey-50"
+                placeholderTextColor="$grey-500"
+                borderColor="$borderTranslucent"
+                placeholder={t({
+                  id: 'common.search',
+                  message: 'Search cards',
+                })}
+              />
+
+              <HeroIcons.MagnifyingGlass
+                size={20}
+                strokeWidth={2.5}
+                color="$grey-400"
+                position="absolute"
+                top={12}
+                left="$4"
+              />
+            </Stack>
+
+            {filteredCredentials.length > 0 ? (
+              <YStack px="$2" pb="$12">
+                {filteredCredentials.map((credential, index) => (
+                  <YStack
+                    key={credential.id}
+                    mt={index === 0 ? 0 : -120}
+                    zIndex={index}
+                  >
+                    <FunkeCredentialCard
+                      issuerImage={{
+                        url:
+                          credential.display.issuer.logo?.url,
+                        altText:
+                          credential.display.issuer.logo
+                            ?.altText,
+                      }}
+                      textColor={credential.display.textColor}
+                      name={credential.display.name}
+                      backgroundImage={{
+                        url:
+                          credential.display
+                            .backgroundImage?.url,
+                        altText:
+                          credential.display
+                            .backgroundImage?.altText,
+                      }}
+                      bgColor={
+                        credential.display
+                          .backgroundColor ?? '$grey-900'
+                      }
+                      onPress={() =>
+                        push(
+                          `/credentials/${credential.id}/attributes`
+                        )
+                      }
+                    />
+                  </YStack>
+                ))}
+              </YStack>
+            ) : (
+              <YStack ai="center" mt="$6">
+                <Paragraph color="$grey-500">
+                  No results found for "{searchQuery}"
+                </Paragraph>
+              </YStack>
+            )}
+          </ScrollView>
         )}
       </FlexPage>
-
       <XStack
         position="absolute"
         bottom="$10"
