@@ -11,15 +11,22 @@ import {
   Paragraph,
   XStack,
   YStack,
+  ScrollView,
 } from '@package/ui'
 import { useRouter } from 'expo-router'
 import { InboxIcon } from './components/InboxIcon'
-import { FunkeCredentialRowCard } from '@easypid/features/wallet/FunkeCredentialsScreen'
-
+import { useScrollViewPosition } from '@package/app/hooks'
+import { FunkeCredentialCard } from '@package/app/components'
 
 export function FunkeWalletScreen() {
   const { push } = useRouter()
   const { withHaptics } = useHaptics()
+
+  const {
+    handleScroll,
+    isScrolledByOffset,
+    scrollEventThrottle,
+  } = useScrollViewPosition()
 
   const { credentials, isLoading: isLoadingCredentials } =
     useCredentialsForDisplay()
@@ -39,8 +46,8 @@ export function FunkeWalletScreen() {
             icon={<HeroIcons.Menu />}
             onPress={pushToMenu}
           />
-          <Heading fontSize={20} fontWeight="$bold" color={'$primary-500'}>
-            ZADA
+          <Heading fontSize={16} fontWeight="$bold" color="$primary-500">
+            Credential List
           </Heading>
           <InboxIcon />
         </XStack>
@@ -49,31 +56,49 @@ export function FunkeWalletScreen() {
             <Loader />
           </YStack>
         ) : credentials.length > 0 ? (
-          <>
-            <Heading heading="h3" px="$2">
-              Credential List
-            </Heading>
-            <YStack px="$2" gap="$2" pb="$12">
-              {credentials.map((credential) => (
-                <FunkeCredentialRowCard
+          <ScrollView
+            onScroll={handleScroll}
+            scrollEventThrottle={scrollEventThrottle}
+            contentContainerStyle={{
+              paddingBottom: 120,
+            }}
+            showsVerticalScrollIndicator={false}
+          >
+            <YStack px="$2" pb="$12">
+              {credentials.map((credential, index) => (
+                <YStack
                   key={credential.id}
-                  name={credential.display.name}
-                  textColor={credential.display.textColor ?? '$grey-100'}
-                  backgroundColor={
-                    credential.display.backgroundColor ?? '$grey-900'
-                  }
-                  issuer={credential.display.issuer.name}
-                  logo={credential.display.issuer.logo}
-                  issuedAt={
-                    credential.metadata.issuedAt
-                      ? new Date(credential.metadata.issuedAt)
-                      : undefined
-                  }
-                  onPress={() => push(`/credentials/${credential.id}/attributes`)}
-                />
+                  mt={index === 0 ? 0 : -120}
+                  zIndex={index}
+                >
+                  <FunkeCredentialCard
+                    issuerImage={{
+                      url: credential.display.issuer.logo?.url,
+                      altText:
+                        credential.display.issuer.logo?.altText,
+                    }}
+                    textColor={credential.display.textColor}
+                    name={credential.display.name}
+                    backgroundImage={{
+                      url:
+                        credential.display.backgroundImage?.url,
+                      altText:
+                        credential.display.backgroundImage?.altText,
+                    }}
+                    bgColor={
+                      credential.display.backgroundColor ??
+                      '$grey-900'
+                    }
+                    onPress={() =>
+                      push(
+                        `/credentials/${credential.id}/attributes`
+                      )
+                    }
+                  />
+                </YStack>
               ))}
             </YStack>
-          </>
+          </ScrollView>
         ) : (
           <Paragraph ta="center" mt="$6">
             <Trans id="credentials.emptyTitle">
@@ -82,12 +107,14 @@ export function FunkeWalletScreen() {
           </Paragraph>
         )}
       </FlexPage>
+
       <XStack
         position="absolute"
         bottom="$10"
         left={0}
         right={0}
-        jc="center">
+        jc="center"
+      >
         <XStack
           ai="center"
           gap="$2"
@@ -97,9 +124,8 @@ export function FunkeWalletScreen() {
           bg="$primary-500"
           onPress={pushToScanner}
           pressStyle={{ opacity: 0.8 }}
-          shadowColor="$shadowColor"
-          shadowRadius={10}>
-          <CustomIcons.Qr size={28} color={'$white'} />
+        >
+          <CustomIcons.Qr size={28} color="$white" />
           <Paragraph color="$white" fontWeight="$bold">
             Scan
           </Paragraph>
